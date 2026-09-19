@@ -39,3 +39,14 @@ class ConflictLogCreate(BaseModel):
     action: str
     conflict_type: str
     details: Optional[str] = None
+
+# WebSocket message models
+class SyncMessage(BaseModel):
+    type: str  # "updated", "created", "rejected"
+    todo_id: int
+    data: Optional[Todo] = None
+
+class TodoConflictInfo(BaseModel):
+    todo_id: int
+    local_updated_at: datetime
+    remote_updated_at: datetime

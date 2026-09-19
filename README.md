@@ -18,81 +18,76 @@ graph LR
     style D fill:#f44336,stroke:#333
 ```
 
-## Funktionen
+## Phase 2: Backend Implementierung
 
-- Cross-platform TODO-Verwaltung (Android + Linux)
-- Synchronisation über Heimnetzwerk (192.168.2.2)
-- Last Write Wins Konfliktlösung
-- Konflikt-Logs in beiden GUIs
-- Einfache Installation und Wartung
+In dieser Phase wurde das Backend der Todo Sync Anwendung implementiert, inklusive:
 
-## Systemvoraussetzungen
+- Vollständige REST API mit LWW Strategie
+- WebSocket Synchronisation
+- SQLite Datenbank im WAL Modus
+- Konfliktbehandlung und Logging
+- systemd Service für Raspberry Pi
+- Smoke Test Skript
 
-### Backend (Raspberry Pi)
-- Raspberry Pi mit Debian/Ubuntu (z.B., Raspbian)
-- Python 3.11+
-- FastAPI
-- SQLite
+### Backend Features
 
-### Frontend (Android + Linux)
-- Android 8.0+ (APK)
-- Linux mit AppImage/RPM (Manjaro)
+#### REST Endpoints
+- `GET /api/v1/todos` - Liste aller Todos
+- `POST /api/v1/todos` - Neues Todo anlegen
+- `PUT /api/v1/todos/{id}` - Todo aktualisieren (mit LWW)
+- `DELETE /api/v1/todos/{id}` - Todo löschen
+- `GET /api/v1/conflict-logs` - Konfliktprotokoll auflisten
 
-## Setup Anleitung
+#### WebSocket Synchronisation
+- `/ws/sync` - Synchronisationskanal für Änderungen
 
-### Raspberry Pi Backend (Backend Setup)
-1. Python 3.11+ installieren
-2. Repository clonen oder Dateien hochladen
-3. Abhängigkeiten installieren: `pip install -r backend/requirements.txt`
-4. FastAPI Server starten: `uvicorn backend.main:app --host 0.0.0.0 --port 8000`
+#### Datenbank
+- SQLite mit WAL Modus für bessere Leistung
+- Tabellen für Todos und Konflikte
 
-### Android App (Frontend)
-1. Tauri App builden und signieren
-2. Android-App auf dem Gerät installieren
+#### Konfliktlösung (Last Write Wins)
+- Bei Konflikten gewinnt der Eintrag mit dem neueren `updated_at` Timestamp
+- Alle Konflikte werden in die Konfliktprotokolltabelle geloggt
 
-### Linux App (Frontend)
-1. Tauri App builden
-2. AppImage oder RPM installieren
+## Technologien
+    
+- **Backend**: FastAPI (Python 3.11+)
+- **Frontend**: Svelte 5 + TypeScript (Vite) mit Tauri 2.0
+- **Datenbank**: SQLite mit WAL Mode
+- **Synchronisation**: REST API + WebSocket
+- **Deployment**: systemd auf Raspberry Pi
 
-## API Übersicht
+## Setup
 
-### REST Endpunkte
-- `GET /api/v1/todos` - Alle TODOs abrufen
-- `POST /api/v1/todos` - Neue TODO erstellen
-- `PUT /api/v1/todos/{id}` - TODO aktualisieren
-- `DELETE /api/v1/todos/{id}` - TODO löschen
-- `GET /api/v1/conflict-logs` - Konflikt-Logs abrufen
+### Lokale Entwicklung
 
-### WebSocket Endpunkte
-- `/ws/sync` - Synchronisation über WebSockets
+1. `pip install -r requirements.txt`
+2. `fastapi run backend/main.py --host 0.0.0.0 --port 8000`
 
-## Last Write Wins (LWW) Strategie
+### Raspberry Pi Deployment
 
-Die LWW Strategie wird serverseitig durch den `updated_at` Feld-Wert in ISO-8601 UTC implementiert. Bei Konflikten wird immer der Eintrag mit dem neuesten `updated_at` Wert als gültig angesehen.
+1. Installiere Python 3.11+
+2. Erstelle einen virtuellen Environment: `python -m venv venv`
+3. Aktiviere den Environment: `source venv/bin/activate`
+4. Installiere Abhängigkeiten: `pip install -r requirements.txt`
+5. Platziere die `todo-api.service` Datei in `/etc/systemd/system/`
+6. Starte den Service: `sudo systemctl start todo-api.service`
+7. Aktiviere Autostart: `sudo systemctl enable todo-api.service`
 
-## Projektstruktur
+## API Dokumentation
 
+Die vollständige API Dokumentation ist im Swagger UI unter `/docs` verfügbar.
+
+## Konfliktbehandlung
+
+Bei Konflikten wird die Last Write Wins Strategie verwendet:
+1. Die Änderung mit dem neueren `updated_at` Timestamp gewinnt 
+2. Beide Versionen werden im Konfliktprotokoll geloggt
+3. Die anderen GUIs zeigen diese Konflikte in ihren Logs an
+
+## Testen
+
+Führe die Smoke Tests aus:
 ```bash
-todo-sync/
-├── src-tauri/          # Tauri 2.0 (Rust)
-├── src/                # Svelte 5 Frontend
-│   ├── components/
-│   ├── lib/
-│   └── App.svelte
-├── backend/            # FastAPI auf dem Pi
-│   ├── main.py
-│   ├── models.py
-│   ├── routes/
-│   ├── ws.py
-│   ├── db.py
-│   └── requirements.txt
-├── tests/
-├── README.md           # ← dieser Datei
-├── ROADMAP.md          # ← Planung
-├── package.json
-└── Cargo.toml
+python smoke_test.py
 ```
-
-## Lizenz
-
-[TODO: Lizenz hinzufügen]

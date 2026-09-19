@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import todos, conflict_logs
 from .db import init_db
+import asyncio
 
 app = FastAPI(
     title="Todo Sync API",

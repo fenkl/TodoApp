@@ -1,0 +1,14 @@
+[Unit]
+Description=Todo Sync API Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/todo-sync-app
+ExecStart=/home/pi/todo-sync-app/venv/bin/fastapi run /home/pi/todo-sync-app/backend/main.py --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

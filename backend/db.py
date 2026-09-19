@@ -9,6 +9,10 @@ DB_PATH = "todo_sync.db"
 def init_db():
     """Initialize the database and create tables if they don't exist."""
     conn = sqlite3.connect(DB_PATH)
+    
+    # Enable WAL mode
+    conn.execute("PRAGMA journal_mode=WAL")
+    
     cursor = conn.cursor()
     
     # Create todos table
@@ -39,8 +43,14 @@ def init_db():
     conn.commit()
     conn.close()
 
-@contextmanager
 def get_db_connection():
+    """Get a database connection."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # This enables column access by name
+    return conn
+
+@contextmanager
+def get_db_connection_context():
     """Context manager for database connections."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # This enables column access by name
@@ -48,7 +58,3 @@ def get_db_connection():
         yield conn
     finally:
         conn.close()
-
-def get_db():
-    """Dependency to get database connection."""
-    return get_db_connection()
