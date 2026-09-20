@@ -10,7 +10,7 @@ class TodoBase(BaseModel):
 class TodoCreate(TodoBase):
     pass
 
-class TodoUpdate(BaseModel):
+class TodoUpdate(TodoBase):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
@@ -23,30 +23,34 @@ class Todo(TodoBase):
     class Config:
         from_attributes = True
 
-class ConflictLog(BaseModel):
-    id: int
+class ConflictLogCreate(BaseModel):
     todo_id: int
-    action: str
-    conflict_type: str
-    details: Optional[str] = None
-    created_at: datetime
+    client_id: str
+    operation: str  # 'create', 'update', 'delete'
+    original_data: dict  # The data before the conflict
+    new_data: dict     # The data that caused the conflict
+    resolved: bool = False
+    timestamp: str
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+class ConflictLog(ConflictLogCreate):
+    id: int
     
     class Config:
         from_attributes = True
 
-class ConflictLogCreate(BaseModel):
-    todo_id: int
-    action: str
-    conflict_type: str
-    details: Optional[str] = None
-
-# WebSocket message models
 class SyncMessage(BaseModel):
-    type: str  # "updated", "created", "rejected"
-    todo_id: int
-    data: Optional[Todo] = None
+    type: str  # 'update', 'create', 'delete'
+    data: dict
+    timestamp: str
+    client_id: str
 
 class TodoConflictInfo(BaseModel):
     todo_id: int
-    local_updated_at: datetime
-    remote_updated_at: datetime
+    conflict_type: str  # e.g., 'lww', 'timestamp_conflict'
+    details: dict
+    resolved: bool = False

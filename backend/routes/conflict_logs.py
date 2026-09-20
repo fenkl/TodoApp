@@ -1,38 +1,57 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
+from typing import List
 from .. import models, db
-from ..db import get_db_connection_context
+from ..db import get_db_connection
 import sqlite3
 
-router = APIRouter()
+router = APIRouter(prefix="/conflict-logs", tags=["Conflict Logs"])
 
 @router.get("/", response_model=List[models.ConflictLog])
-async def read_conflict_logs(skip: int = 0, limit: int = 100):
-    with get_db_connection_context() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM conflict_logs ORDER BY created_at DESC LIMIT ? OFFSET ?", (limit, skip))
-        logs = cursor.fetchall()
-        return [models.ConflictLog.from_attributes(log) for log in logs]
+def read_conflict_logs(skip: int = 0, limit: int = 100):
+    connection = get_db_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM conflict_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?", (limit, skip))
+        rows = cursor.fetchall()
+        return [models.ConflictLog(**row) for row in rows]
+    finally:
+        connection.close()
 
 @router.post("/", response_model=models.ConflictLog)
-async def create_conflict_log(conflict_log: models.ConflictLogCreate):
-    with get_db_connection_context() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO conflict_logs (todo_id, action, conflict_type, details) VALUES (?, ?, ?, ?) RETURNING id",
-            (conflict_log.todo_id, conflict_log.action, conflict_log.conflict_type, conflict_log.details)
-        )
-        conn.commit()
-        log_id = cursor.fetchone()[0]
+def create_conflict_log(conflict_log: models.ConflictLogCreate):
+    connection = get_db_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute('''
+            INSERT INTO conflict_logs (todo_id, client_id, operation, original_data, new_data, resolved, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            conflict_log.todo_id,
+            conflict_log.client_id,
+            conflict_log.operation,
+            str(conflict_log.original_data),
+            str(conflict_log.new_data),
+            conflict_log.resolved,
+            conflict_log.timestamp
+        ))
+        connection.commit()
+        
+        log_id = cursor.lastrowid
         cursor.execute("SELECT * FROM conflict_logs WHERE id = ?", (log_id,))
-        new_log = cursor.fetchone()
-        return models.ConflictLog.from_attributes(new_log)
+        row = cursor.fetchone()
+        return models.ConflictLog(**row)
+    finally:
+        connection.close()
 
 @router.get("/{log_id}", response_model=models.ConflictLog)
-async def read_conflict_log(log_id: int):
-    with get_db_connection_context() as conn:
-        cursor = conn.cursor()
+def read_conflict_log(log_id: int):
+    connection = get_db_connection()
+    try:
+        cursor = connection.cursor()
         cursor.execute("SELECT * FROM conflict_logs WHERE id = ?", (log_id,))
-        log = cursor.fetchone()
-        if log is None:
+        row = cursor.fetchone()
+        if row is None:
             raise HTTPException(status_code=404, detail="Conflict log not found")
-        return models.ConflictLog.from_attributes(log)
+        return models.ConflictLog(**row)
+    finally:
+        connection.close()

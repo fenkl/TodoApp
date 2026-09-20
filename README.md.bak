@@ -1,0 +1,142 @@
+# TodoSync - Cross-Platform Todo App
+
+A cross-platform todo application with synchronization capabilities over LAN using Tauri 2.0, Svelte frontend, and FastAPI backend.
+
+## Features
+
+- **Cross-Platform Support**: Runs on Windows, macOS, Linux, and Android
+- **Real-time Synchronization**: WebSocket connection for real-time updates
+- **Offline Support**: Local storage queue for offline changes that syncs when reconnecting
+- **Conflict Resolution**: Last Write Wins strategy with conflict log display
+- **LAN Communication**: Connects to backend server at `http://192.168.2.2:8000`
+- **End-to-End Synchronization**: Complete synchronization and conflict resolution system
+
+## Architecture
+
+### Project Structure
+```
+.
+├── src-tauri/           # Tauri application code
+│   ├── Cargo.toml       # Rust dependencies and configuration
+│   └── src/main.rs      # Main entry point
+├── src/                 # Svelte frontend
+│   ├── App.svelte       # Main application component
+│   ├── components/      # Reusable Svelte components
+│   │   ├── TodoList.svelte
+│   │   └── ConflictLogPanel.svelte
+│   ├── lib/             # Utility libraries
+│   │   ├── api.ts       # REST API wrapper
+│   │   ├── ws.ts        # WebSocket connection with reconnect logic
+│   │   └── offline-queue.ts  # Offline queue system
+└── tauri.conf.json      # Tauri configuration
+```
+
+### Key Components
+
+1. **Frontend (Svelte)**
+   - TodoList component with Add, Toggle, Delete functionality
+   - ConflictLogPanel showing last 50 conflicts
+   - Responsive UI with proper styling
+
+2. **Backend Communication**
+   - `lib/api.ts`: Fetch wrapper for http://192.168.2.2:8000 REST API
+   - `lib/ws.ts`: WebSocket connection with exponential backoff reconnect logic
+   - `lib/offline-queue.ts`: Local storage-based offline queue that syncs on reconnect
+
+3. **Tauri Integration**
+   - Tauri 2.0 framework for cross-platform deployment
+   - Android build configuration
+   - Windows application settings (800x600 window)
+
+## Phase 5 - Synchronization & Conflict Resolution Implemented
+
+This implementation completes the end-to-end synchronization system with the following features:
+
+### LWW Conflict Resolution
+- Implemented Last Write Wins principle for conflicts
+- Added conflict logging system to track conflicting operations
+- Created conflict handling module that tracks and resolves conflicts properly
+
+### WebSocket Event Synchronization  
+- Implemented WebSocket endpoint for real-time updates
+- Added event broadcasting functionality for GUI updates
+- Enhanced WebSocket client with proper connection management
+
+### Offline Handling & Reconnect Logic  
+- Created offline queue system with localStorage persistence
+- Implemented retry logic with exponential backoff
+- Added automatic reconnection capability in WebSocket client
+- Implemented replay mechanisms for queued actions
+
+### Database Transaction Management  
+- Used SQLite transactions for atomic updates  
+- Ensured sequential processing of concurrent writes
+- Added proper database schema for conflict tracking
+
+### Edge Case Handling
+1. **Pi offline** → Offline-Queue, Reconnect, Replay mechanisms work
+2. **Parallel-write (2× PUT in same ms)** → Server uses SQLite transactions for serialization  
+3. **WebSocket events** → GUI updates properly triggered
+4. **Conflict resolution** → LWW principle applied using timestamped operations
+
+## Getting Started
+
+### Prerequisites
+- Node.js and npm installed (for development)
+- Rust toolchain
+- Android development tools (for Android builds)
+
+### Installation
+1. Clone repository
+2. Run `npm install` to install frontend dependencies
+3. Run `cargo build` for local development (Tauri)
+
+### Development
+1. `npm run dev` - Start development server
+2. `npm run tauri android dev` - Build and run Android app (requires ADB and Android toolchain)
+3. `npm run tauri android build --release` - Generate release .aab file
+
+## Testing
+
+1. Ensure backend server is running at `http://192.168.2.2:8000`
+2. Connect Android device or emulator to same LAN network
+3. Run `npm run tauri android dev` to test on device
+4. Use `npm run tauri android build --release` to generate release package
+
+## Build Configuration
+
+- **Build Targets**: AppImage and RPM (Linux), Windows, macOS, Android
+- **Bundle Identifier**: `com.todosync.app`
+- **Application Name**: TodoSync
+- **Window Size**: 800x600 for desktop versions
+- **Icons**: Multiple resolutions provided
+
+## Linux Build Dependencies (Manjaro)
+
+To build the Linux version on Manjaro, install the required dependencies:
+
+```bash
+sudo pacman -S webkit2gtk-4.1 librsvg libayatana-appindicator rust
+```
+
+## Linux Build Process
+
+Run the following command to build for Linux:
+
+```bash
+npm run tauri build
+```
+
+This will generate:
+- .AppImage file (for distribution)
+- .rpm package (for Red Hat-based distributions)
+
+The application will automatically set `device = "linux"` in sync payloads when running on Linux.
+
+## Linux Build Dependencies (Manjaro)
+
+To build the Linux version on Manjaro, install the required dependencies:
+
+```bash
+sudo pacman -S webkit2gtk-4.1 librsvg libayatana-appindicator rust
+```

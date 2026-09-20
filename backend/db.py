@@ -15,7 +15,7 @@ def init_db():
     
     cursor = conn.cursor()
     
-    # Create todos table
+    # Create todos table with sequence number for LWW
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +23,8 @@ def init_db():
             description TEXT,
             completed BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            sequence_number INTEGER DEFAULT 0
         )
     ''')
     
@@ -32,10 +33,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS conflict_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             todo_id INTEGER,
-            action TEXT,
-            conflict_type TEXT,
-            details TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            client_id TEXT,
+            operation TEXT,
+            original_data TEXT,
+            new_data TEXT,
+            resolved BOOLEAN DEFAULT FALSE,
+            resolution TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (todo_id) REFERENCES todos (id)
         )
     ''')
