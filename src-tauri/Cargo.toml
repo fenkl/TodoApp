@@ -11,15 +11,14 @@ rust-version = "1.70"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "0.15.0", features = [] }
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tauri = { version = "2.0.0-beta", features = ["shell-open", "notification"] }
+tauri = { version = "0.15.0", features = ["shell-open", "notification"] }
 chrono = "0.4"
 
 [features]
-# this feature is used for the android build target
 default = [ "wasm"]
 wasm = []

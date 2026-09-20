@@ -1,17 +1,4 @@
-[package]
-name = "todo-sync"
-version = "0.1.0"
-edition = "2021"
-
-[build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
-
-[dependencies]
-tauri = { version = "2.0.0-beta", features = ["shell-open"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-[features]
-# this feature is required to use the `tauri::api` in your app
-default = ["custom-protocol"]
-custom-protocol = ["tauri/custom-protocol"]
+[workspace]
+members = [
+    "src-tauri"
+]
